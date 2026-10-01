@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>A question for you 💌</title>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Nunito:wght@600;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#fde4ec; --ink:#4a1630; --soft:#8a4a68; --yes:#e0245e; --yesink:#fff; --no:#fff; --noink:#6d3a55; --ring:#4a1630;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){--bg:#2a0f1e;--ink:#ffe3ee;--soft:#e7a9c3;--yes:#ff4f86;--yesink:#2a0f1e;--no:#4a1c33;--noink:#ffd0e1;--ring:#ffe3ee}
+}
+:root[data-theme="dark"]{--bg:#2a0f1e;--ink:#ffe3ee;--soft:#e7a9c3;--yes:#ff4f86;--yesink:#2a0f1e;--no:#4a1c33;--noink:#ffd0e1;--ring:#ffe3ee}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{background:var(--bg);color:var(--ink);font-family:"Nunito",system-ui,sans-serif;display:grid;place-items:center;overflow:hidden;text-align:center}
+main{padding:24px;max-width:560px}
+.emoji{font-size:clamp(64px,18vw,104px);line-height:1;animation:beat 1.4s ease-in-out infinite}
+h1{font-family:"Caveat",cursive;font-weight:700;font-size:clamp(40px,10vw,68px);line-height:1.05;margin:.3em 0 .2em}
+p{color:var(--soft);font-weight:600;margin:0 0 28px;min-height:1.5em}
+.row{display:flex;gap:18px;justify-content:center;align-items:center;flex-wrap:wrap}
+button{font:inherit;font-weight:800;font-size:20px;border:0;border-radius:999px;padding:14px 38px;cursor:pointer;touch-action:manipulation}
+button:focus-visible{outline:3px solid var(--ring);outline-offset:3px}
+#yes{background:var(--yes);color:var(--yesink);box-shadow:0 8px 24px rgba(224,36,94,.35);transform-origin:center;transition:transform .2s}
+#no{background:var(--no);color:var(--noink);box-shadow:0 4px 14px rgba(0,0,0,.15);transition:left .25s ease,top .25s ease}
+#no.run{position:fixed;z-index:5}
+#slot{display:inline-block}
+.done h1{font-size:clamp(44px,12vw,80px)}
+.heart{position:fixed;top:-40px;font-size:28px;pointer-events:none;animation:fall linear forwards}
+@keyframes fall{to{transform:translateY(115vh) rotate(40deg);opacity:.9}}
+@keyframes beat{0%,100%{transform:scale(1)}50%{transform:scale(1.12)}}
+@media (prefers-reduced-motion:reduce){.emoji{animation:none}.heart{animation-duration:6s!important}#no{transition:none}}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<main id="ask">
+  <div class="emoji" aria-hidden="true">🎁</div>
+  <h1 id="q">Do you love me?</h1>
+  <p id="hint">Choose carefully…</p>
+  <div class="row">
+    <button id="yes">Yes</button>
+    <span id="slot"><button id="no">No</button></span>
+  </div>
+</main>
+<main id="win" hidden class="done">
+  <div class="emoji" aria-hidden="true"></div>
+  <h1>I knew it! I love you too</h1>
+  <p>You just made my whole day.</p>
+</main>
+
+<script>
+// ✏️ Edit these to personalise
+const QUESTION = "";
+const WIN_TITLE = "pahingi naman ng cute pics mo 🤭";
+const WIN_TEXT = "You just made my whole day.";
+const TAUNTS = ["Nope, try again 😏","Too slow!","The button is shy 🙈","Are you sure? 😘","Wrong button, baby","Just press Yes 💕","Nice try!","Not gonna happen 😌"];
+
+const $ = id => document.getElementById(id);
+const yes = $("yes"), no = $("no"), slot = $("slot"), hint = $("hint");
+$("q").textContent = QUESTION;
+document.querySelector("#win h1").textContent = WIN_TITLE;
+document.querySelector("#win p").textContent = WIN_TEXT;
+
+let dodges = 0, scale = 1;
+
+function dodge(px, py){
+  // freeze the original spot so the layout doesn't jump
+  if(!no.classList.contains("run")){
+    const r = no.getBoundingClientRect();
+    slot.style.width = r.width + "px"; slot.style.height = r.height + "px";
+    no.classList.add("run");
+  }
+  const w = no.offsetWidth, h = no.offsetHeight, m = 12;
+  const maxX = window.innerWidth - w - m, maxY = window.innerHeight - h - m;
+  let x, y, tries = 0;
+  do {
+    x = m + Math.random() * Math.max(0, maxX - m);
+    y = m + Math.random() * Math.max(0, maxY - m);
+    tries++;
+  } while (tries < 25 && px != null && Math.hypot(x + w/2 - px, y + h/2 - py) < 160);
+  no.style.left = x + "px"; no.style.top = y + "px";
+
+  dodges++;
+  hint.textContent = TAUNTS[dodges % TAUNTS.length];
+  scale = Math.min(1.8, 1 + dodges * 0.06);
+  yes.style.transform = "scale(" + scale + ")";
+}
+
+// Runs away on hover, touch, click and keyboard focus — it can never be pressed
+no.addEventListener("pointerenter", e => dodge(e.clientX, e.clientY));
+no.addEventListener("pointerdown", e => { e.preventDefault(); dodge(e.clientX, e.clientY); });
+no.addEventListener("click", e => { e.preventDefault(); dodge(e.clientX, e.clientY); });
+no.addEventListener("focus", () => dodge(null, null));
+window.addEventListener("resize", () => { if(no.classList.contains("run")) dodge(null, null); });
+
+yes.addEventListener("click", () => {
+  $("ask").hidden = true; no.hidden = true;
+  $("win").hidden = false;
+  const icons = ["💖","💗","💕","💘","🌹"];
+  for(let i = 0; i < 40; i++){
+    const s = document.createElement("span");
+    s.className = "heart";
+    s.textContent = icons[i % icons.length];
+    s.style.left = Math.random() * 100 + "vw";
+    s.style.fontSize = 18 + Math.random() * 28 + "px";
+    s.style.animationDuration = 3 + Math.random() * 3 + "s";
+    s.style.animationDelay = Math.random() * 1.5 + "s";
+    document.body.appendChild(s);
+    setTimeout(() => s.remove(), 8000);
+  }
+});
+</script>
+</body>
+</html>
